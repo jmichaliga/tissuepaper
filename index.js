@@ -7,6 +7,7 @@ const googleAuth = require('google-auth-library');
 
 const config = require('./config')
 const client = github.client(config.gitHubToken)
+const repo = client.repo(config.repo)
 
 // If modifying these scopes, delete your previously saved credentials
 // at ~/.credentials/sheets.googleapis.com-nodejs-quickstart.json
@@ -27,6 +28,19 @@ const initSpreadsheet = function(data){
     authorize(JSON.parse(content), writeIssues, data);
   });
 }
+
+const initAuth = () => {
+  fs.readFile('client_secret.json', function processClientSecrets(err, content) {
+    if (err) {
+      console.log('Error loading client secret file: ' + err);
+      return;
+    }
+    // Authorize a client with the loaded credentials, then call the
+    // Google Sheets API and pass over data if you have any
+    authorize(JSON.parse(content), clearSheet);
+  });
+}
+
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
  * given callback function.
@@ -184,14 +198,13 @@ function listMajors(auth) {
   }
 
 const processRepo = async () => {
-  
-  client.get('/repos/'+ config.repo +'/issues?page=2&per_page=100', {}, function (err, status, body, headers) {
+  // issues?page=2&per_page=100 - Per Page seems to be ignored for Issues
+  client.get('/repos/'+ config.repo +'/issues', {}, function (err, status, body, headers) {
     try {
       const data = body
       let issues = []
       data.forEach(function(issue){
         let instance = [issue.number, issue.title, issue.created_at, issue.updated_at, issue.html_url, issue.body]
-
         issues.push(instance)
       })
 
@@ -204,4 +217,28 @@ const processRepo = async () => {
   return
 }
 
-processRepo()
+const evalRepo = async (pg, per) => {
+
+  repo.issues({
+    page: pg,
+    per_page: per,
+  }, function(err, body, headers){
+    const data = body
+    let issues = []
+    data.forEach(function(issue){
+      let instance = [issue.number, issue.title, issue.created_at, issue.updated_at, issue.html_url, issue.body]
+      issues.push(instance)
+    })
+    // initAuth()
+    initSpreadsheet(issues)
+
+    let hasNext = headers.link.includes('rel="next"')
+    if(hasNext){
+      evalRepo(pg+1, per)
+    }
+  })
+
+  return
+}
+
+evalRepo(1, 100)
