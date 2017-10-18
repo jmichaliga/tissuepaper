@@ -12,6 +12,6 @@ You will need to register an application with credentials for your Google Sheets
 
 Follow the instructions [here](https://developers.google.com/sheets/api/quickstart/nodejs) to get started with the Google credentials.
 and provide it on the `client_secret.json`
-As well as [here]() to provide a Personal Authorization Token which is referenced on `client.json`, along with the owner/repo name and the Google Spreadsheet ID.
+As well as [here](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/) to provide a Personal Authorization Token which is referenced on `config.json`, along with the owner/repo name and the Google Spreadsheet ID.
 
 > Note: Do NOT add these files to your GitHub commits. I've included the .gitignore for this purpose 
