@@ -1,0 +1,15 @@
+{
+  "name": "tissuepaper",
+  "version": "1.0.0",
+  "description": "A utility to export from GitHub Issues to a Google Sheet",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "Justin Michaliga <justin@capsule8.com>",
+  "license": "ISC",
+  "dependencies": {
+    "google-auth-library": "^0.11.0",
+    "googleapis": "^22.2.0"
+  }
+}
