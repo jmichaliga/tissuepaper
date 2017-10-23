@@ -18,7 +18,7 @@ const TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
     process.env.USERPROFILE) + '/.credentials/';
 const TOKEN_PATH = TOKEN_DIR + 'sheets.googleapis.com-nodejs.json';
 
-const headers = [["Number", "Title", "Created At", "Updated At", "URL", "Body"]]
+const headers = [["Number", "Title", "Created At", "Updated At", "URL", "Labels", "Body"]]
 
 // Load client secrets from a local file.
 const initSpreadsheet = function(data){
@@ -140,25 +140,7 @@ const createSheet = (auth) => {
 const clearSheet = (auth) => {
   sheets.spreadsheets.values.clear({
     auth: auth,
-    range: 'Sheet1!A2:F',
-    spreadsheetId: config.spreadsheetId,  
-  }, function(err, resp){
-    if (err) {
-      console.error(err);
-      return;
-    }
-    console.log(JSON.stringify(resp, null, 2))
-  })
-}
-
-const writeIssues = (auth, issues) => {
-  sheets.spreadsheets.values.append({
-    auth: auth,
-    range: 'Sheet1!A2:F',
-    valueInputOption: "USER_ENTERED",
-    resource: {
-      values: issues
-    },
+    range: 'Sheet1!A2:G',
     spreadsheetId: config.spreadsheetId,  
   }, function(err, resp){
     if (err) {
@@ -172,7 +154,7 @@ const writeIssues = (auth, issues) => {
 const writeHeaders = (auth) => {
   sheets.spreadsheets.values.update({
     auth: auth,
-    range: 'Sheet1!A1:F',
+    range: 'Sheet1!A1:G',
     valueInputOption: "USER_ENTERED",
     resource: {
       values: headers
@@ -187,21 +169,47 @@ const writeHeaders = (auth) => {
   })
 }
 
-const evalRepo = async (pg, per) => {
+const writeIssues = (auth, issues) => {
+  sheets.spreadsheets.values.append({
+    auth: auth,
+    range: 'Sheet1!A2:G',
+    valueInputOption: "USER_ENTERED",
+    resource: {
+      values: issues
+    },
+    spreadsheetId: config.spreadsheetId,  
+  }, function(err, resp){
+    if (err) {
+      console.error(err);
+      return;
+    }
+    console.log(JSON.stringify(resp, null, 2))
+  })
+}
+
+const parseIssues = async (pg, per) => {
   repo.issues({
     page: pg,
     per_page: per,
   }, (err, body, headers) => {
     const data = body
     let issues = []
-    data.forEach(function(issue){
-      let instance = [issue.number, issue.title, issue.created_at, issue.updated_at, issue.html_url, issue.body]
+    data.forEach(function(issue) {
+      let labels = []
+      if (issue.labels.length) {
+        console.log('>', issue.labels.length)
+        issue.labels.forEach(function(label) {
+          console.log('->', label)
+          labels.push(label.name)
+        })
+      }
+      let instance = [issue.number, issue.title, issue.created_at, issue.updated_at, issue.html_url, JSON.stringify(labels), issue.body]
       issues.push(instance)
     })
-    initAuth()
-    // initSpreadsheet(issues)
-    // if(headers.link.includes('rel="next"')){evalRepo(pg+1, per)}
+    initAuth() // Writes Header
+    initSpreadsheet(issues) // Writes Issues
+    if (headers.link.includes('rel="next"')) { parseIssues(pg+1, per) } // Recursive if there are more issues on the page
   })
 }
 
-evalRepo(1, 100)
+parseIssues(1, config.results)
