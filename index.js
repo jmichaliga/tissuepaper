@@ -7,6 +7,7 @@ const googleAuth = require('google-auth-library');
 
 const sheets = google.sheets('v4');
 
+// Load client secrets from a local file.
 const config = require('./config')
 const client = github.client(config.gitHubToken)
 const repo = client.repo(config.repo)
@@ -20,7 +21,7 @@ const TOKEN_PATH = TOKEN_DIR + 'sheets.googleapis.com-nodejs.json';
 
 const headers = [["Number", "Title", "Created At", "Updated At", "URL", "Labels", "Body"]]
 
-// Load client secrets from a local file.
+// Where the writing of data is passed in and into the Spreadsheet
 const initSpreadsheet = function(data){
   fs.readFile('client_secret.json', function processClientSecrets(err, content) {
     if (err) {
@@ -33,6 +34,7 @@ const initSpreadsheet = function(data){
   });
 }
 
+// First Auth Init, from a secret file, will writeHeaders to start.
 const initAuth = () => {
   fs.readFile('client_secret.json', function processClientSecrets(err, content) {
     if (err) {
@@ -51,6 +53,7 @@ const initAuth = () => {
  *
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
+ * @param {Object} data If the callback requires data to be passed
  */
 const authorize = (credentials, callback, data) => {
   var clientSecret = credentials.installed.client_secret;
@@ -187,6 +190,12 @@ const writeIssues = (auth, issues) => {
   })
 }
 
+/**
+ * Take the issues from the repo and pass them to a spreadsheet
+ *
+ * @param {Integer} pg The page number to start on from Github Issues
+ * @param {Integer} per The number of queries per_page
+ */
 const parseIssues = async (pg, per) => {
   repo.issues({
     page: pg,
@@ -197,9 +206,7 @@ const parseIssues = async (pg, per) => {
     data.forEach(function(issue) {
       let labels = []
       if (issue.labels.length) {
-        console.log('>', issue.labels.length)
         issue.labels.forEach(function(label) {
-          console.log('->', label)
           labels.push(label.name)
         })
       }
