@@ -34,8 +34,8 @@ const initSpreadsheet = function(data){
   });
 }
 
-// First Auth Init, from a secret file, will writeHeaders to start.
-const initAuth = () => {
+// First Auth Init, from a secret file, will writeHeaders by default
+const initAuth = (fn) => {
   fs.readFile('client_secret.json', function processClientSecrets(err, content) {
     if (err) {
       console.log('Error loading client secret file: ' + err);
@@ -43,7 +43,12 @@ const initAuth = () => {
     }
     // Authorize a client with the loaded credentials, then call the
     // Google Sheets API and pass over data if you have any
-    authorize(JSON.parse(content), writeHeaders);
+    if ( fn ) { 
+      authorize(JSON.parse(content), fn) 
+    } else {
+      authorize(JSON.parse(content), writeHeaders)
+    }
+
   });
 }
 
@@ -173,6 +178,10 @@ const writeHeaders = (auth) => {
 }
 
 const writeIssues = (auth, issues) => {
+  let sheetId = config.spreadsheetId
+  if(process.argv[3]){
+    console.log('-> sheet')
+  }
   sheets.spreadsheets.values.append({
     auth: auth,
     range: 'Sheet1!A2:G',
@@ -180,7 +189,7 @@ const writeIssues = (auth, issues) => {
     resource: {
       values: issues
     },
-    spreadsheetId: config.spreadsheetId,  
+    spreadsheetId: sheetId,  
   }, function(err, resp){
     if (err) {
       console.error(err);
@@ -213,10 +222,40 @@ const parseIssues = async (pg, per) => {
       let instance = [issue.number, issue.title, issue.created_at, issue.updated_at, issue.html_url, JSON.stringify(labels), issue.body]
       issues.push(instance)
     })
-    initAuth() // Writes Header
+    initAuth() // Writes Header as Test
     initSpreadsheet(issues) // Writes Issues
-    if (headers.link.includes('rel="next"')) { parseIssues(pg+1, per) } // Recursive if there are more issues on the page
+    if (headers.link) { // If there are multiple pages
+      if (headers.link.includes('rel="next"')) { parseIssues(pg+1, per) } // Recursive if there are more issues on the page
+    }
   })
 }
 
-parseIssues(1, config.results)
+let n = process.argv[0]
+let scr = process.argv[1]
+let opt1 = process.argv[2]
+let opt2 = process.argv[3]
+
+if ( opt1 ) {
+  console.log('>', opt1, opt2 )
+  switch( opt1 ){
+    case 'create':
+      console.log('creating new sheet:')
+      initAuth(createSheet)
+      break
+    case 'read':
+      console.log('todo: read data')
+      break
+    case 'copy':
+      break
+    case 'pull':
+      break
+    case 'clear':
+      break
+    case 'prependCols':
+      break
+  }
+} else {
+  parseIssues(1, config.results)
+}
+
+
