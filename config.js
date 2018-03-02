@@ -1,4 +1,5 @@
 {
   repo: 'https://github.com/jmichaliga/tissuepaper',
-  gitHubToken: 'XXX'
+  gitHubToken: 'XXX',
+  spreadsheetId: 'XXX'
 }
